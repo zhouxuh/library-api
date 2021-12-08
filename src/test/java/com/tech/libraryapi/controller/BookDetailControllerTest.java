@@ -18,16 +18,17 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @ExtendWith(MockitoExtension.class)
@@ -121,6 +122,55 @@ public class BookDetailControllerTest {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andDo(MockMvcResultHandlers.print());
+    }
+
+    @Test
+    void updateBook() throws Exception {
+        when(bookDetailService.updateBook(book.getId(), book2)).thenReturn(updatedBook);
+        mockMvc.perform(put("/api/v1/book/{id}", book.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(asJsonString(book2)))
+                .andExpect(status().isOk())
+                .andDo(MockMvcResultHandlers.print());
+        verify(bookDetailService, times(1)).updateBook(any(), any());
+    }
+
+    @Test
+    void deleteBookById() throws Exception {
+        when(bookDetailService.deleteBookById(book.getId())).thenReturn(book);
+        mockMvc.perform(delete("/api/v1/book/" + book.getId())
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andDo(MockMvcResultHandlers.print());
+    }
+
+    @Test
+    void getBookById() throws Exception {
+        when(bookDetailService.getBookById(book.getId())).thenReturn(book);
+        mockMvc.perform(get("/api/v1/book/" + book.getId())
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andDo(MockMvcResultHandlers.print());
+    }
+
+    @Test
+    void getBookByIdShouldReturnHttpStatusCode400() throws Exception {
+        String exceptionInput = "exceptionInput";
+        mockMvc.perform(get("/api/v1/book/{id}", exceptionInput)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(result -> assertTrue(result.getResolvedException() instanceof MethodArgumentTypeMismatchException))
+                .andExpect(MockMvcResultMatchers.status().isBadRequest())
+                .andDo(MockMvcResultHandlers.print());
+    }
+
+    @Test
+    void getBookByAuthor() throws Exception {
+        String input = "J. K. Rowling";
+        mockMvc.perform(get("/api/v1/book/author/{author}", input)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andDo(MockMvcResultHandlers.print());
+        verify(bookDetailService, times(1)).getBookByAuthor(any());
     }
 
     static String asJsonString(final Object obj) {
